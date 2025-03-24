@@ -1,1 +1,1 @@
-# 💾SQL STUDY
+# 💾 SQLD STUDY
