@@ -1,7 +1,5 @@
 -- --------조인
-SELECT u.userid,name,birtthyear,
-FROM userTbl u
-JOIN buyTbl b ON u.userID = b.userID;
+
 
 --회원별 총 구매 금액
 SELECT u.userID, u.name, SUM(b.price * b.amount) AS 총구매금액
