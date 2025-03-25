@@ -58,13 +58,24 @@ select * from (select rownum as RN, usertbl.* from usertbl) where RN>=2 and RN<=
 select addr, count(*) as 사용자수
 from usertbl
 group by addr;
-
+-- ---------------------------
 select userid, sum(price*amount)as 구매총액
 from buytbl
 group by userid;
-
+-- ---------------------------
 SELECT NVL(groupName, '미분류') AS 그룹명, SUM(amount) AS 판매수량합계 FROM buyTbl GROUP BY NVL(groupName, '미분류');
 
+-- case - is null then
+SELECT 
+    case
+    when groupName is null then '미분류! 
+    else groupName
+    end
+    as 카테고리,sum(amount)
+    from buytbl
+    group by groupName;
+
+-- ---------------------------
 SELECT 
     birthYear AS 출생년도,
     AVG(height) AS 평균키
@@ -75,6 +86,7 @@ GROUP BY
 ORDER BY 
     birthYear;
     
+ -- ---------------------------   
 SELECT 
     prodName AS 제품명,
     COUNT(*) AS 구매횟수,
@@ -84,8 +96,8 @@ FROM
 GROUP BY 
     prodName
 ORDER BY 
-    COUNT(*) DESC;
-    
+    구매횟수 DESC;
+-- ---------------------------    
 SELECT 
     NVL(mobile1, '미입력') AS 통신사,
     COUNT(*) AS 가입자수
@@ -95,19 +107,70 @@ GROUP BY
     NVL(mobile1, '미입력')
 ORDER BY 
     가입자수 DESC;
-    
-    SELECT 
-    u.addr AS 지역,
-    SUM(b.price * b.amount) AS 총구매액
-FROM 
-    userTbl u
-JOIN 
-    buyTbl b ON u.userID = b.userID
-GROUP BY 
-    u.addr
-ORDER BY 
-    총구매액 DESC;
+ -- ---------------------------   
+ select u.addr,sum(b.price*b.amount) as 총구매액
+ from usertbl u
+ join buytbl b
+ on u.userid = b.userid
+ group by u.addr;
+ 
+ -- ---------------------------
+ select userid,groupname, 
+ count(groupname) 
+ from buytbl 
+ group by userid,groupname;
+ -- ---------------------------
+ 
+ select SUBSTR(mDate,1,2), 
+ count(*) 
+ from usertbl 
+ group by SUBSTR(mDate,1,2)
+ order by SUBSTR(mDate,1,2);
+ -- -----------------------------
+ select 2025-u.birthyear, sum(b.price * b.amount) 
+ from buytbl b
+ join usertbl u
+ on b.userid=u.userid
+group by floor(2025-u.birthyear/10);
+-- ----------------------------------
+ SELECT FLOOR((2025 - u.birthYear) / 10) * 10 AS 연령대, 
+       SUM(b.price * b.amount) AS 구매총액
+FROM userTbl u
+JOIN buyTbl b ON u.userID = b.userID
+GROUP BY FLOOR((2025 - u.birthYear) / 10) * 10
+ORDER BY 연령대;
 
+-- 구매 금액 합계가 1000 이상인 사용자 조회
+select userid, sum(price * amount) as 총구매액
+from buytbl
+group by userid
+having sum(price * amount)>=1000;
+
+-- 평균키가 175 이상인 지역 조회
+select addr, avg(height) as 평균키
+from usertbl
+group by addr
+having avg(height)>=175;
+
+-- 주의점!! having 과 where이 group by 의 어디에 들어가야하는 지 유의!!
+
+select userid, count(*) as 구매횟수, sum(price*amount) as 총구매액
+from buytbl
+group by userid
+having count(*)>=and sum(price*amount)>=100;
+
+--inner join
+select u.addr, nvl(b.groupname,'미분류'), sum(b.amount*b.price)
+from usertbl u
+join buytbl b
+on u.userid=b.userid
+group by u.addr, b.groupname
+order by sum(b.amount*b.price) desc
+;
+
+select groupname, sum(price*amount)
+from buytbl
+group by groupname;
     
 
 
