@@ -249,17 +249,198 @@ having avg(price*amount)>= (select avg(price*amount) from buytbl);
 
 --10userTbl과 buyTbl을 조인하여 같은 지역(addr)에 사는 사용자들 중 구매 총액이 지역별 평균 구매액보다 높은 사용자(userID)를 조회하는 SQL문을 작성하시오. (서브쿼리와 HAVING 사용)
 
--- 사용자별 구매 총액 
-select u.userid,sum(amount*price)
-from usertbl u
-join buytbl b
-on u.userid=b.userid
-group by u.userid;
+--10
+--1) userTbl과 buyTbl을 조인하고
+--2) 같은 지역(addr)에 사는 사용자들 중 / 구매 총액이 /  지역별 평균 구매액 보다 /높은 /사용자(userID)를 조회/하는 SQL문을 작성하시오. (서브쿼리와 HAVING 사용)
+-- 같은 지역(addr)에 사는 사용자들 중 구매 총액 >=  지역별 평균 구매액
 
--- 지역별 평균 구매액
-select addr,avg(amount*price)
-from usertbl u
-join buytbl b
-on u.userid=b.userid
-group by addr;
+    -- 같은 지역(addr)에 사는 사용자들 중 구매 총액(aa)
+    select addr ,u.userid, sum(amount*price) as 총액
+    from userTbl u
+    join buyTbl b 
+    on u.userid=b.userid
+    group by addr,u.userid;
+    -- JOIN
+    --지역별 구매평균
+    select addr,avg(amount*price) as 지역별평균
+    from userTbl u
+    join buyTbl b
+    on u.userid=b.userid
+    group by addr;
+    
+    -- WHERE 
+    
+select aa.addr,userid,총액,지역별평균
+from 
+(
+    -- 같은 지역(addr)에 사는 사용자들 중 구매 총액
+    select addr ,u.userid, sum(amount*price) as 총액
+    from userTbl u
+    join buyTbl b 
+    on u.userid=b.userid
+    group by addr,u.userid
+) aa
+join
+(
+    --지역별 구매평균
+    select addr,avg(amount*price) as 지역별평균
+    from userTbl u
+    join buyTbl b
+    on u.userid=b.userid
+    group by addr
+) bb
+on aa.addr=bb.addr
+where aa.총액>=bb.지역별평균;
 
+-- ---------------------------
+--함수의 개념 및 종류
+--함수(Function)의 정의: 특정 작업을 수행하기 위해 미리 정의된 명령어
+--단일행 함수(Single-row Functions): 행별로 하나의 결과를 반환
+--다중행 함수(Multi-row Functions): 여러 행의 값을 입력받아 하나의 결과를 반환
+
+--예시 : 
+-- 단일행 함수 예시 (UPPER: 각 행별로 처리)
+SELECT userID, UPPER(name) AS upper_name FROM userTbl;
+
+-- 다중행 함수 예시 (COUNT: 여러 행을 묶어서 처리)
+SELECT addr, COUNT(*) AS user_count FROM userTbl GROUP BY addr;
+-- ------------------------------------------
+--단일행 함수-문자형 함수
+--LOWER, UPPER, INITCAP: 대소문자 변환
+--LENGTH, LENGTHB: 문자열 길이 반환
+--SUBSTR: 문자열 일부 추출
+--INSTR: 특정 문자 위치 찾기
+--LPAD, RPAD: 문자열 채우기
+--TRIM, LTRIM, RTRIM: 공백 제거
+--REPLACE: 문자열 치환
+--CONCAT: 문자열 연결
+
+-- 대소문자 변환
+SELECT userID,
+       LOWER(userID) AS lower_id,         -- 소문자 변환
+       UPPER(name) AS upper_name,         -- 대문자 변환
+       INITCAP(LOWER(name)) AS init_cap   -- 첫 글자만 대문자로 변환
+FROM userTbl;
+-- ---------------------------
+-- 문자열 길이
+SELECT name, 
+       LENGTH(name) AS name_length,       -- 이름의 문자 개수
+       LENGTH(addr) AS addr_length        -- 주소의 문자 개수
+FROM userTbl;
+-- ---------------------------
+-- 문자열 추출
+SELECT name,
+       SUBSTR(name, 1, 1) AS first_char,  -- 이름의 첫 글자
+       SUBSTR(userID, 2) AS userid_part   -- userID의 두 번째 문자부터 끝까지
+FROM userTbl;
+-- ---------------------------
+-- 문자 위치 찾기
+SELECT name, 
+       INSTR(name, '김') AS position_kim   -- '김'이 있는 위치 (없으면 0)
+FROM userTbl;
+-- ---------------------------
+-- 문자열 채우기
+SELECT userID,
+       LPAD(userID, 10, '*') AS lpad_id,  -- userID 왼쪽을 *로 채워 10자리로
+       RPAD(name, 10, '-') AS rpad_name   -- name 오른쪽을 -로 채워 10자리로
+FROM userTbl;
+-- ---------------------------
+-- 공백 제거
+SELECT TRIM(' SQL ') AS trim_result,      -- 양쪽 공백 제거: 'SQL'
+       LTRIM(' SQL ') AS ltrim_result,    -- 왼쪽 공백 제거: 'SQL '
+       RTRIM(' SQL ') AS rtrim_result     -- 오른쪽 공백 제거: ' SQL'
+FROM dual;
+-- ---------------------------
+-- 문자열 치환
+SELECT name,
+       REPLACE(mobile1, null, '없음') AS replace_null,   -- NULL을 '없음'으로 대체
+       REPLACE(addr, '서울', 'SEOUL') AS replace_addr   -- '서울'을 'SEOUL'로 대체
+FROM userTbl;
+
+-- 문자열 연결
+SELECT name,
+       CONCAT(mobile1, '-') AS part1,                    -- 휴대폰 국번과 '-' 연결
+       CONCAT(CONCAT(mobile1, '-'), mobile2) AS mobile,  -- 국번-전화번호 형식으로 연결
+       mobile1 || '-' || mobile2 AS phone_number        -- 연결 연산자 사용
+FROM userTbl;
+-- --------------------------
+--단일행 함수-숫자형 함수
+--ROUND: 반올림
+--TRUNC: 절삭
+--CEIL, FLOOR: 올림, 내림
+--MOD: 나머지 구하기
+--ABS: 절대값
+--SIGN: 부호 확인
+--POWER: 제곱
+--SQRT: 제곱근
+-- ---------------------
+--예시코드:
+
+-- buyTbl 테이블의 가격 데이터 활용
+-- 반올림, 절삭
+SELECT prodName, price,
+       ROUND(price/1000, 2) AS round_thousands,    -- 천 단위로 나누고 소수점 2자리 반올림
+       TRUNC(price/1000, 1) AS trunc_thousands     -- 천 단위로 나누고 소수점 1자리 절삭
+FROM buyTbl;
+
+-- 올림, 내림
+SELECT prodName, price,
+       CEIL(price/100) AS ceil_hundreds,           -- 백 단위로 나누고 올림
+       FLOOR(price/100) AS floor_hundreds          -- 백 단위로 나누고 내림
+FROM buyTbl;
+
+-- 나머지, 절대값
+SELECT prodName, price, amount,
+       MOD(price, 100) AS remainder_100,           -- 가격을 100으로 나눈 나머지
+       ABS(price - 500) AS abs_diff_500            -- 가격과 500의 차이의 절대값
+FROM buyTbl;
+
+-- 부호, 제곱, 제곱근
+SELECT prodName, price,
+       SIGN(price - 100) AS sign_price,            -- 가격이 100보다 크면 1, 같으면 0, 작으면 -1
+       POWER(amount, 2) AS amount_squared,         -- 수량의 제곱
+       SQRT(price) AS sqrt_price                   -- 가격의 제곱근
+FROM buyTbl;
+
+--단일행 함수-날짜형 함수
+--SYSDATE, CURRENT_DATE: 현재 날짜
+--ADD_MONTHS: 월 더하기
+--MONTHS_BETWEEN: 월 차이 계산
+--NEXT_DAY: 다음 요일 날짜
+--LAST_DAY: 월의 마지막 날짜
+--EXTRACT: 날짜 요소 추출
+--TO_CHAR: 날짜를 문자로 변환
+--TO_DATE: 문자를 날짜로 변환
+-- ----------------------------
+--예시코드 : 
+
+-- 현재 날짜와 회원 가입일 활용
+SELECT name, mDate,
+       SYSDATE AS today,                             -- 현재 날짜/시간
+       CURRENT_DATE AS current_date                  -- 현재 날짜
+FROM userTbl;
+
+-- 날짜 연산
+SELECT name, mDate,
+       mDate + 7 AS after_week,                      -- 가입일 1주일 후
+       mDate - 7 AS before_week                      -- 가입일 1주일 전
+FROM userTbl;
+
+-- 월 관련 함수
+SELECT name, mDate,
+       ADD_MONTHS(mDate, 6) AS after_6months,        -- 가입일 6개월 후
+       MONTHS_BETWEEN(SYSDATE, mDate) AS months_since_join  -- 가입 후 경과 월 수
+FROM userTbl;
+
+-- 요일, 말일 함수
+SELECT name, mDate,
+       NEXT_DAY(mDate, '금요일') AS next_friday,      -- 가입일 이후의 첫 금요일
+       LAST_DAY(mDate) AS last_day_of_month          -- 가입월의 마지막 날짜
+FROM userTbl;
+
+-- 날짜 요소 추출
+SELECT name, mDate,
+       EXTRACT(YEAR FROM mDate) AS join_year,        -- 가입 연도
+       EXTRACT(MONTH FROM mDate) AS join_month,      -- 가입 월
+       EXTRACT(DAY FROM mDate) AS join_day           -- 가입 일
+FROM userTbl;
