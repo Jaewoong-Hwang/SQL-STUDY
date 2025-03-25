@@ -444,3 +444,5 @@ SELECT name, mDate,
        EXTRACT(MONTH FROM mDate) AS join_month,      -- 가입 월
        EXTRACT(DAY FROM mDate) AS join_day           -- 가입 일
 FROM userTbl;
+
+
