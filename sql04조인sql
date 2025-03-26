@@ -1,0 +1,180 @@
+--정의:
+--두 테이블에서 동일한 이름을 가진 모든 컬럼에 대해 자동으로 동등 조인을 수행합니다. 
+--추가적인 조건을 지정하지 않아도 되며, 공통 컬럼이 여러 개일 경우 모두 조인 조건으로 사용됩니다.
+
+--구문:
+--SELECT 컬럼1, 컬럼2, ...
+--FROM 테이블A
+--NATURAL JOIN 테이블B;
+
+--예시:
+SELECT *
+FROM userTbl u
+NATURAL JOIN buyTbl b;
+
+SELECT *
+FROM userTbl u
+JOIN buyTbl b
+on u.userid=b.userid;
+
+-- natural 과의 차이점은 narural에서는 동일한 열이 없다
+--주의:
+--공통 컬럼이 없거나 데이터 타입이 다른 경우 에러가 발생할 수 있으며, 
+--명시적인 조인 조건을 지정하지 않으므로 사용 시 주의가 필요합니다.
+
+--USING 절을 이용한 조인
+--설명: 
+--두 테이블 간에 동일한 이름의 컬럼을 지정하여 조인을 수행합니다. 조인 조건으로 사용할 컬럼을 명시적으로 지정할 수 있습니다.?
+
+--구문:
+--SELECT 컬럼1, 컬럼2, ...
+--FROM 테이블A
+--JOIN 테이블B USING (공통컬럼);
+
+--예시:
+SELECT*
+FROM userTbl u
+JOIN buyTbl b USING (userID);
+
+SELECT*
+FROM userTbl u
+JOIN buyTbl b 
+on u.userid = b.userid;
+
+-- inner join 과 비슷함
+
+--
+--주의: 
+--USING 절을 사용할 경우, 해당 컬럼에는 별칭을 사용할 수 없으며, 일부 데이터베이스 시스템에서는 지원하지 않을 수 있습니다.
+
+--서브 쿼리(Subquery)
+--서브 쿼리는 SQL 문장 내에 포함된 또 다른 SQL 문장으로, 메인 쿼리가 서브 쿼리를 포함하는 종속적인 관계입니다.
+--
+--서브 쿼리의 특징
+--괄호 () 안에 작성합니다.
+--단일 행 또는 복수 행 비교 연산자와 함께 사용됩니다.
+--서브 쿼리는 메인 쿼리가 실행되기 전에 한 번만 실행됩니다.
+--ORDER BY는 서브 쿼리에서 사용할 수 없습니다(단, TOP이나 ROWNUM과 함께 사용하는 경우 제외).
+
+
+--서브 쿼리의 유형-1. 반환되는 데이터 행수에 따른 분류
+--단일 행 서브 쿼리(Single Row Subquery)
+--
+--서브 쿼리의 실행 결과가 한 행만 반환
+--단일 행 비교 연산자 사용: =, >, <, >=, <=, <>
+
+-- 김경호보다 키가 큰 사용자 조회
+SELECT userID, name, height 
+FROM userTbl
+WHERE height > (SELECT height FROM userTbl WHERE name = '김경호');
+
+--서브 쿼리의 유형-1. 반환되는 데이터 행수에 따른 분류
+--다중 행 서브 쿼리(Multiple Row Subquery)
+--
+--서브 쿼리의 실행 결과가 여러 행 반환
+--다중 행 비교 연산자 사용: IN, ANY, ALL, EXISTS
+
+-- 경남 지역에 사는 사용자와 같은 키를 가진 사용자 조회
+-- IN
+SELECT userID, name, addr, height
+FROM userTbl
+WHERE height IN (SELECT height FROM userTbl WHERE addr = '경남');
+
+--ANY
+SELECT userID, name, addr, height
+FROM userTbl
+WHERE height>= ANY(SELECT height FROM userTbl WHERE addr = '경남');
+-- or 연산자에 가깝다
+
+-- ALL
+SELECT userID, name, addr, height
+FROM userTbl
+WHERE height>= ALL(SELECT height FROM userTbl WHERE addr = '경남');
+-- and 연산에 가깝다
+
+--서브 쿼리의 유형-1. 반환되는 데이터 행수에 따른 분류
+--다중 컬럼 서브 쿼리(Multiple Column Subquery)
+
+--서브 쿼리의 결과로 여러 컬럼 반환
+
+-- 주소별로 가장 키가 큰 사람들 조회
+SELECT *
+FROM userTbl
+WHERE (addr, height) IN (SELECT addr, MAX(height) FROM userTbl GROUP BY addr);
+
+SELECT addr, MAX(height) FROM userTbl GROUP BY addr;
+
+
+--서브 쿼리의 유형-2. 서브 쿼리 위치에 따른 분류
+--SELECT 절에 사용되는 서브 쿼리 (스칼라 서브 쿼리)
+
+--한 행, 한 컬럼만 반환해야 함
+
+-- 각 사용자의 구매 총액 계산
+SELECT u.userID, u.name, 
+       (SELECT SUM(price*amount) FROM buyTbl b WHERE b.userID = u.userID) AS '총구매액'
+FROM userTbl u;
+
+
+-- ------------------
+--1.
+--서울 지역에 거주하는 회원 중, 전체 평균 키보다 큰 회원의 이름과 키를 조회하는 SQL문을 작성하시오.
+SELECT name, height
+FROM userTbl
+WHERE addr = '서울'
+  AND height > (SELECT AVG(height) FROM userTbl);
+
+--
+--2.
+--물품을 한 번이라도 구매한 적이 있는 회원의 이름과 주소를 조회하는 SQL문을 작성하시오.
+--(단, buyTbl의 userID 기준)
+SELECT name, addr
+FROM userTbl
+WHERE userID IN (SELECT DISTINCT userID FROM buyTbl);
+--
+--3.
+--‘전자’ 분류 상품 중 가장 비싼 상품을 구매한 회원의 이름과 상품명, 가격을 조회하는 SQL문을 작성하시오.
+SELECT prodname, price
+FROM buytbl
+WHERE groupname= '전자' and price = (SELECT MAX(price) FROM buytbl where groupname='전자');
+
+SELECT u.name, b.prodName, b.price
+FROM buyTbl b
+JOIN userTbl u ON b.userID = u.userID
+WHERE groupName = '전자'
+  AND price = (SELECT MAX(price) FROM buyTbl WHERE groupName = '전자');
+
+
+--
+--4.
+--각 회원이 구매한 총 금액(price × amount)의 평균보다 더 많이 구매한 회원의 이름과 총 구매 금액을 조회하는 SQL문을 작성하시오.
+select name,
+--
+--5.
+--한 번도 물건을 구매한 적 없는 회원의 이름과 가입일을 조회하는 SQL문을 작성하시오.
+--
+--6.
+--청바지를 구매한 회원들과 같은 지역에 사는 다른 회원들의 이름과 지역을 조회하는 SQL문을 작성하시오.
+--(단, 청바지를 구매한 사람은 제외)
+--
+--7.
+--각 회원의 userID와 그 회원이 구매한 가장 비싼 물품의 이름과 가격을 조회하는 SQL문을 작성하시오.
+--
+--8.
+--‘운동화’를 구매한 회원의 수보다 더 많은 회원이 있는 지역명을 조회하는 SQL문을 작성하시오.
+--
+--9.
+--자신이 구매한 상품 중 ‘책’보다 비싼 상품을 구매한 회원의 이름과 상품명을 조회하는 SQL문을 작성하시오.
+--(연관 서브쿼리 사용)
+--
+--10.
+--모든 회원의 평균 키보다 키가 작은 회원이 구매한 상품의 이름과 수량을 조회하는 SQL문을 작성하시오.
+
+
+
+
+
+
+
+
+
