@@ -77,3 +77,218 @@ COMMIT;
 SELECT s.name AS 학생이름, e.subject AS 과목, e.score
 FROM studentTbl s
 FULL OUTER JOIN examTbl e ON s.studentID = e.studentID;
+
+-- 크로스 조인
+
+-- ① 모든 회원(userTbl)과 모든 상품명(prodName)의 조합 출력
+SELECT u.userID, u.name, b.prodName
+FROM userTbl u
+CROSS JOIN (
+    SELECT DISTINCT prodName FROM buyTbl
+) b;
+
+-- 셀프 조인 
+-- userTbl 내에서 출생년도가 같은 회원끼리 짝 지어보기 (자기 자신은 제외)
+SELECT A.name AS 회원A, B.name AS 회원B, A.birthYear
+FROM userTbl A
+JOIN userTbl B 
+ON A.birthYear = B.birthYear
+WHERE A.userID <> B.userID;
+
+CREATE TABLE userSelfTestTbl (
+    userID      VARCHAR2(10) PRIMARY KEY,
+    name        VARCHAR2(50),
+    birthYear   NUMBER(4),
+    addr        VARCHAR2(100),
+    mobile1     VARCHAR2(10),
+    mobile2     VARCHAR2(20),
+    height      NUMBER(3),
+    mDate       DATE,
+    managerID   VARCHAR2(10)  -- 자기 참조용 관리자 ID
+);
+
+
+INSERT INTO userSelfTestTbl VALUES ('LSG', '이승기', 1987, '서울', '011', '1111111', 182, TO_DATE('08/08/08', 'RR/MM/DD'), 'JYP');
+INSERT INTO userSelfTestTbl VALUES ('KBS', '김범수', 1979, '경남', '011', '2222222', 173, TO_DATE('12/04/04', 'RR/MM/DD'), 'JYP');
+INSERT INTO userSelfTestTbl VALUES ('KKH', '김경호', 1971, '전남', '019', '3333333', 177, TO_DATE('07/07/07', 'RR/MM/DD'), 'LJB');
+INSERT INTO userSelfTestTbl VALUES ('JYP', '조용필', 1950, '경기', '011', '4444444', 166, TO_DATE('09/04/04', 'RR/MM/DD'), NULL); -- 최고 관리자
+INSERT INTO userSelfTestTbl VALUES ('SSK', '성시경', 1979, '서울', NULL, NULL, 186, TO_DATE('13/12/12', 'RR/MM/DD'), 'LSG');
+INSERT INTO userSelfTestTbl VALUES ('LJB', '임재범', 1963, '서울', '016', '6666666', 182, TO_DATE('09/09/09', 'RR/MM/DD'), 'JYP');
+INSERT INTO userSelfTestTbl VALUES ('YJS', '윤종신', 1969, '경남', NULL, NULL, 170, TO_DATE('05/05/05', 'RR/MM/DD'), 'KBS');
+INSERT INTO userSelfTestTbl VALUES ('EJW', '은지원', 1972, '경북', '011', '8888888', 174, TO_DATE('14/03/03', 'RR/MM/DD'), 'LSG');
+INSERT INTO userSelfTestTbl VALUES ('JKW', '조관우', 1965, '경기', '018', '9999999', 172, TO_DATE('10/10/10', 'RR/MM/DD'), 'KKH');
+
+
+select*from userSelftesttbl;
+
+
+userTbl에 관리자(상사) ID가 있다고 가정
+-- 가정: userTbl에 managerID 컬럼이 추가됨
+-- SELF JOIN 으로 사원과 관리자 연결
+SELECT E.name AS 직원명, M.name AS 관리자명, M.ManagerId as 관리자의매니저
+FROM userSelfTestTbl E
+JOIN userSelfTestTbl M ON E.managerID = M.userID;
+
+
+-- -------------------------------
+
+DROP TABLE empTbl;
+
+CREATE TABLE empTbl (
+  empID     NUMBER PRIMARY KEY,
+  empName   VARCHAR2(20),
+  position  VARCHAR2(20),
+  managerID NUMBER  -- 상사의 사번
+);
+
+-- 데이터 삽입
+INSERT INTO empTbl VALUES (1, '김대표', '대표이사', NULL);
+INSERT INTO empTbl VALUES (2, '이부장', '기획부장', 1);
+INSERT INTO empTbl VALUES (3, '박과장', '기획과장', 2);
+INSERT INTO empTbl VALUES (4, '최대리', '기획대리', 3);
+INSERT INTO empTbl VALUES (5, '정부장', '영업부장', 1);
+INSERT INTO empTbl VALUES (6, '홍사원', '영업사원', 5);
+INSERT INTO empTbl VALUES (7, '유팀장', '개발팀장', 1);
+INSERT INTO empTbl VALUES (8, '고주임', '개발주임', 7);
+INSERT INTO empTbl VALUES (9, '신사원', '개발사원', 8);
+
+COMMIT;
+
+select * from empTbl;
+
+-- ① 직원과 그 상사의 이름 출력
+SELECT E.empName AS 직원, M.empName AS 상사
+FROM empTbl E
+LEFT JOIN empTbl M
+ON E.managerID = M.empID;
+
+-- ② 부하직원이 1명 이상인 상사 목록
+SELECT M.empName AS 상사, COUNT(*) AS 부하수
+FROM empTbl E
+JOIN empTbl M ON E.managerID = M.empID
+GROUP BY M.empName;
+
+-- ③ 특정 상사(이부장)의 모든 직원 출력
+SELECT E.empName
+FROM empTbl E
+JOIN empTbl M ON E.managerID = M.empID
+WHERE M.empName = '이부장';
+
+-- ④ 대표이사의 직속 부하 직원 출력
+SELECT empName
+FROM empTbl
+WHERE managerID = (
+  SELECT empID FROM empTbl WHERE empName = '김대표'
+);
+
+-- ⑤ 직원과 상사의 직급 함께 출력
+SELECT E.empName AS 직원, E.position, M.empName AS 상사, M.position AS 상사직급
+FROM empTbl E
+LEFT JOIN empTbl M ON E.managerID = M.empID;
+
+-- 문제
+
+-- ① 모든 회원의 이름과 구매한 상품명, 단가, 수량 조회 (구매하지 않은 회원 제외)
+-- 이름, 상품명, 단가, 수량 출력
+-- (조인 사용)
+
+select u.name, b.prodname, b.price, b.amount
+from usertbl u
+join buytbl b on u.userid = b.userid;
+
+
+-- ② 회원별 총 구매 금액(단가 × 수량의 합) 출력
+-- 이름, 총구매금액 출력. 금액 높은 순 정렬
+
+select u.name, sum(b.price*b.amount) as 총구매금액
+from usertbl u
+join buytbl b on u.userid = b.userid
+group by u.name
+order by 총구매금액 desc;
+
+-- ③ '책'을 구매한 회원 이름 중복 없이 조회
+SELECT distinct u.name
+FROM usertbl u
+join buytbl b 
+on u.userid=b.userid
+where b.prodname = '책';
+
+-- ④ 2010년 이후 가입한 회원이 구매한 상품 내역 조회
+-- 이름, 가입일, 상품명 출력
+select u.name, u.mdate, b.prodname
+from usertbl u
+join buytbl b
+on u.userid=b.userid
+where u.mdate >= '2010-01-01'
+
+
+-- ⑤ 상품을 가장 많이 구매한 회원(수량 기준) 1명만 출력
+-- 이름, 총수량 출력
+SELECT *
+FROM (
+  SELECT u.name, SUM(b.amount) AS 총수량
+  FROM userTbl u
+  JOIN buyTbl b ON u.userID = b.userID
+  GROUP BY u.name
+  ORDER BY 총수량 DESC
+)
+WHERE ROWNUM = 1;
+
+
+select u.name, total_amount
+from (
+    select b.userid, sum(b.amount) as total_amount
+    from buytbl b
+    group by b.userid
+    order by total_amount desc
+) top_user
+join usertbl u on u.userid = top_user.userid
+where rownum = 1;
+
+
+-- ⑥ 키가 175 이상인 회원 중 구매한 상품이 있는 경우 이름, 상품명 출력
+
+-- ⑦ 상품 분류(groupName)별로 총 매출액(단가×수량) 출력
+
+-- ⑧ 서울 지역에 사는 회원이 구매한 상품명과 수량 출력
+
+-- ⑨ 물품별 구매 회원 수(중복 없이) 출력
+
+-- ⑩ 회원별 평균 구매 단가(소수점 2자리 반올림) 출력
+
+
+--lefr join
+-- ① 모든 회원의 이름과 구매 내역(없는 경우 NULL로 표시)
+-- 이름, 상품명, 가격 출력
+
+SELECT u.name, b.prodName, b.price
+FROM userTbl u
+LEFT JOIN buyTbl b ON u.userID = b.userID;
+
+-- ② 구매 이력이 없는 회원만 조회 (구매 안 한 사람 찾기)
+-- 이름, ID 출력
+SELECT u.name, u.userID
+FROM userTbl u
+LEFT JOIN buyTbl b ON u.userID = b.userID
+WHERE b.userID IS NULL;
+
+-- ③ 지역별 회원 이름과 구매 수량 (구매 없으면 NULL)
+-- 지역, 이름, 수량 출력
+SELECT u.addr, u.nmae, sum(b.amount)
+FROM userTbl u
+LEFT JOIN buyTbl b 
+ON u.userID = b.userID
+group by u.addr, u.name;
+
+-- ④ 회원별 총 구매 금액 (없으면 0으로 표시)
+-- 이름, 총금액 출력
+select u.name, nvl(sum(b.price*b.amount),0) as "구매 금액"
+from usertbl u
+left join buytbl b
+on u.userid = b.userid
+group by u.name
+order by "구매 금액" desc;
+
+
+-- ⑤ 키가 170 이상인 회원의 구매 정보 (구매 없으면 NULL)
+-- 이름, 키, 상품명 출력
