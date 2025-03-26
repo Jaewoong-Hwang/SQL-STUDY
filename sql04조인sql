@@ -148,7 +148,11 @@ WHERE groupName = '전자'
 --
 --4.
 --각 회원이 구매한 총 금액(price × amount)의 평균보다 더 많이 구매한 회원의 이름과 총 구매 금액을 조회하는 SQL문을 작성하시오.
-select name,
+select u.name, sum(b.price*b.amount)as "총 구매 금액"
+from usertbl u
+join buytbl b
+on u.userid=b.userid
+where (select avg(sum(b.price*b.amount) from )
 --
 --5.
 --한 번도 물건을 구매한 적 없는 회원의 이름과 가입일을 조회하는 SQL문을 작성하시오.
@@ -170,8 +174,23 @@ select name,
 --10.
 --모든 회원의 평균 키보다 키가 작은 회원이 구매한 상품의 이름과 수량을 조회하는 SQL문을 작성하시오.
 
+-- ----------------------------------------
+-- 집합연산자
+--UNION
+--[정의]
+--두 SELECT 결과를 합쳐서 하나의 결과로 출력
+--중복된 행은 제거
+--정렬 기준은 첫 번째 SELECT문 기준
+--
+--[특징]
+--중복 제거
+--자동 오름차순 정렬(Oracle 기준)
+--컬럼 수, 데이터 타입, 순서 동일해야 함
 
 
+SELECT userid FROM buytbl
+UNION
+SELECT userid FROM usertbl;
 
 
 
